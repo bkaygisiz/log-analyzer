@@ -1,11 +1,13 @@
-#[derive(Debug)]
+use crate::utils::helpers::extract_day_part;
+use crate::entities::DailyAnalyzerResult;
+
 pub struct AnalyzerResult {
     pub daily_results: Vec<DailyAnalyzerResult>,
-    pub total_requests_number: u32,
-    pub total_2xx_requests_number: u32,
-    pub total_3xx_requests_number: u32,
-    pub total_4xx_requests_number: u32,
-    pub total_5xx_requests_number: u32,
+    total_requests_number: u32,
+    total_2xx_requests_number: u32,
+    total_3xx_requests_number: u32,
+    total_4xx_requests_number: u32,
+    total_5xx_requests_number: u32,
     total_error_rate: f32,
 }
 
@@ -68,7 +70,12 @@ impl AnalyzerResult {
 
     pub fn calculate_total_error_rate(&mut self) {
         self.total_error_rate =
-            self.total_4xx_requests_number as f32 / self.total_requests_number as f32;
+            (self.total_4xx_requests_number as f32 + self.total_5xx_requests_number as f32) / self.total_requests_number as f32;
+    }
+
+        pub fn get_daily_result_if_day_exists(&mut self, date: &str) -> Option<&mut DailyAnalyzerResult> {
+        let day_part = extract_day_part(date);
+        self.daily_results.iter_mut().find(|daily_result| daily_result.date == day_part)
     }
 
     pub fn calculate_everything(&mut self) {
@@ -112,55 +119,5 @@ impl AnalyzerResult {
         }
 
         println!("\n{}", "=".repeat(50));
-    }
-}
-
-#[derive(Debug)]
-pub struct DailyAnalyzerResult {
-    pub date: String,
-    pub daily_requests_number: u32,
-    pub daily_2xx_requests_number: u32,
-    pub daily_3xx_requests_number: u32,
-    pub daily_4xx_requests_number: u32,
-    pub daily_5xx_requests_number: u32,
-    daily_error_rate: f32,
-}
-
-impl DailyAnalyzerResult {
-    pub fn new(date: String) -> Self {
-        Self {
-            date,
-            daily_requests_number: 0,
-            daily_2xx_requests_number: 0,
-            daily_3xx_requests_number: 0,
-            daily_4xx_requests_number: 0,
-            daily_5xx_requests_number: 0,
-            daily_error_rate: 0.0,
-        }
-    }
-
-    pub fn add_daily_requests_number(&mut self, requests_number: u32) {
-        self.daily_requests_number += requests_number;
-    }
-
-    pub fn add_daily_2xx_requests_number(&mut self, requests_number: u32) {
-        self.daily_2xx_requests_number += requests_number;
-    }
-
-    pub fn add_daily_3xx_requests_number(&mut self, requests_number: u32) {
-        self.daily_3xx_requests_number += requests_number;
-    }
-
-    pub fn add_daily_4xx_requests_number(&mut self, requests_number: u32) {
-        self.daily_4xx_requests_number += requests_number;
-    }
-
-    pub fn add_daily_5xx_requests_number(&mut self, requests_number: u32) {
-        self.daily_5xx_requests_number += requests_number;
-    }
-
-    pub fn calculate_daily_error_rate(&mut self) {
-        self.daily_error_rate =
-            self.daily_4xx_requests_number as f32 / self.daily_requests_number as f32;
     }
 }

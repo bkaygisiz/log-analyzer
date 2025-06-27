@@ -1,8 +1,8 @@
-use std::fs::File;
+use std::{fs::File, path::Path};
 
-// Import the analyzer module
-mod analyzer;
-use analyzer::analyze_file;
+pub mod utils;
+pub mod entities;
+use crate::entities::Analyzer;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -11,17 +11,28 @@ fn main() {
         return;
     }
     let file_path: &String = &args[1];
-    let file = open_file(file_path);
-    analyze_file(&file);
-}
-
-fn open_file(file_path: &String) -> File {
-    let file_content = File::open(file_path);
-    match file_content {
-        Ok(file) => file,
-        Err(e) => {
-            eprintln!("ERROR: ===== Error opening file '{}': {}", file_path, e);
-            std::process::exit(1); // Exit gracefully with error code
+    if file_exists(file_path) {
+        let mut analyzer = Analyzer::new(file_path.clone());
+        match open_file(&analyzer.file_path) {
+            Ok(file) => {
+                analyzer.analyze_file(&file);
+            }
+            Err(e) => {
+                eprintln!("ERROR: Failed to open file '{}': {}", file_path, e);
+                std::process::exit(1);
+            }
         }
     }
+    else {
+        println!("File does not exist");
+        std::process::exit(1);
+    }
+}
+
+fn file_exists(file_path: &String) -> bool {
+    Path::new(file_path).exists()
+}
+
+fn open_file(file_path: &String) -> Result<File, std::io::Error> {
+    File::open(file_path)
 }
