@@ -1,10 +1,10 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::time::Instant;
 use regex::Regex;
 use once_cell::sync::Lazy;
 use crate::entities::{AnalyzerResult, DailyAnalyzerResult};
 use crate::utils::helpers::extract_day_part;
+use crate::utils::benchmark::Benchmark;
 
 // Compile regex once at startup
 static LOG_PATTERN_STATUS_CODE_AND_DATE: Lazy<Regex> = Lazy::new(|| {
@@ -22,7 +22,7 @@ impl Analyzer {
     }
 
     pub fn analyze_file(&mut self, file: &File) {
-        let start_time = Instant::now();
+        let mut benchmark = Benchmark::new();
         let buf_reader = BufReader::new(file);
         let mut analyzer_result = AnalyzerResult::new();
         let mut line_count = 0;
@@ -39,19 +39,13 @@ impl Analyzer {
             }
         }
     
-        let analysis_time = Instant::now();
+        benchmark.checkpoint("File reading + parsing");
         analyzer_result.calculate_everything();
-        let calculation_time = Instant::now();
+        benchmark.checkpoint("Calculations");
         analyzer_result.print_everything();
-        let total_time = Instant::now();
+        benchmark.checkpoint("Output");
         
-        // Performance metrics
-        println!("\n=== PERFORMANCE METRICS ===");
-        println!("Total lines processed: {}", line_count);
-        println!("File reading + parsing: {:.3}ms", analysis_time.duration_since(start_time).as_millis());
-        println!("Calculations: {:.3}ms", calculation_time.duration_since(analysis_time).as_millis());
-        println!("Total execution time: {:.3}ms", total_time.duration_since(start_time).as_millis());
-        println!("Lines per second: {:.0}", line_count as f64 / total_time.duration_since(start_time).as_secs_f64());
+        benchmark.print_metrics(line_count);
     }
     
     fn analyze_line(&mut self, line: &str, analyzer_result: &mut AnalyzerResult) {
